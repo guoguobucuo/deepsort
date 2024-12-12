@@ -224,7 +224,7 @@ class FRCNN(object):
 
             # --------------------JOSIAH-------------------------
             # x1, y1, x2, y2, conf, detclass
-            box = np.array([left, top, right, bottom, score, c])
+            box = np.array([left, top, right, bottom, score, c, grade, grade_score])
             boxes = np.vstack((boxes, box))
             # --------------------JOSIAH-------------------------
 

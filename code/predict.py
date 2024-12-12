@@ -69,7 +69,11 @@ if __name__ == "__main__":
             print("fps= %.2f"%(fps))
             frame = cv2.putText(frame, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
-            cv2.imshow("video",frame)
+            #cv2.imshow("video",frame)
+            if ref:
+                save_path = "/content/frame_saved.jpg"  # 保存图片的路径
+                cv2.imwrite(save_path, frame)  # 保存为 BGR 格式
+                print(f"Frame saved at {save_path}")
             c = cv2.waitKey(1) & 0xff
             if video_save_path!="":
                 out.write(frame)
