@@ -138,7 +138,7 @@ class FRCNN(object):
         image_data  = np.expand_dims(np.transpose(preprocess_input(np.array(image_data, dtype='float32')), (2, 0, 1)), 0)
 
         # boxes
-        boxes = np.empty((0, 6))
+        boxes = np.empty((0, 8))
 
 
         with torch.no_grad():

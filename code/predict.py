@@ -2,8 +2,10 @@
 #   将单张图片预测、摄像头检测和FPS测试功能
 #   整合到了一个py文件中，通过指定mode进行模式的修改。
 #----------------------------------------------------#
-import time
 
+import time
+import os
+import csv
 import cv2
 import numpy as np
 from PIL import Image
@@ -30,7 +32,8 @@ if __name__ == "__main__":
     #   video_path、video_save_path和video_fps仅在mode='video'时有效
     #   保存视频时需要ctrl+c退出或者运行到最后一帧才会完成完整的保存步骤。
     #----------------------------------------------------------------------------------------------------------#
-    video_path      = r'D:\code\fasterrcnn-demo\bugvideo.avi'
+    #video_path      = r'D:\code\fasterrcnn-demo\bugvideo.avi'
+    video_path = r'/content/output_video.avi'
     video_save_path = r'sdf.mp4'
     video_fps       = 25.0
     #----------------------------------------------------------------------------------------------------------#
@@ -40,7 +43,8 @@ if __name__ == "__main__":
     #   test_interval和fps_image_path仅在mode='fps'有效
     #----------------------------------------------------------------------------------------------------------#
     test_interval   = 100
-    fps_image_path  = "img/street.jpg"
+    #fps_image_path  = "img/street.jpg"
+    fps_image_path = "/content/gdrive/MyDrive/3aac4a5af8fd58b25dcd9f91ed14b46.png"
 
 
     if mode == "video":
@@ -51,6 +55,20 @@ if __name__ == "__main__":
             out = cv2.VideoWriter(video_save_path, fourcc, video_fps, size)
 
         fps = 0.0
+        i = 1
+
+        # 创建保存检测后的图像文件夹
+        save_dir = "/content/detected_frames"
+        os.makedirs(save_dir, exist_ok=True)
+
+        # 创建并打开CSV文件
+        csv_file = "detection_results.csv"
+        f = open(csv_file, 'w', newline='')
+        writer = csv.writer(f)
+        # 根据frcnn.detect_image返回的box信息顺序定义列名
+        # 假设box为 [x1, y1, x2, y2, score, class_id, grade, grade_score]
+        writer.writerow(["frame_id", "x1", "y1", "x2", "y2", "score", "class_id", "grade", "grade_score"])
+
         while(True):
             t1 = time.time()
             # 读取某一帧
@@ -70,10 +88,15 @@ if __name__ == "__main__":
             frame = cv2.putText(frame, "fps= %.2f"%(fps), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             
             #cv2.imshow("video",frame)
-            if ref:
-                save_path = "/content/frame_saved.jpg"  # 保存图片的路径
-                cv2.imwrite(save_path, frame)  # 保存为 BGR 格式
-                print(f"Frame saved at {save_path}")
+            # 将检测结果写入CSV文件
+            # box中每行为 [x1, y1, x2, y2, score, class_id, grade, grade_score]
+            for b in box:
+                x1, y1, x2, y2, score, cls_id, grade, grade_score = b
+                writer.writerow([i, x1, y1, x2, y2, score, cls_id, grade, grade_score])
+
+            # 保存当前检测后的图像帧
+            save_path = os.path.join(save_dir, f"frame{str(i).zfill(6)}.jpg")
+            cv2.imwrite(save_path, frame)
             c = cv2.waitKey(1) & 0xff
             if video_save_path!="":
                 out.write(frame)
