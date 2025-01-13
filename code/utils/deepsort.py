@@ -4,19 +4,20 @@ import cv2
 from deep_sort.deep_sort import DeepSort
 
 # 假设你的检测结果CSV文件路径（离线检测后的结果）
-detection_file = "code/model_data/hdpe_grade.pth"
+detection_file = "/content/detection_results_2.csv"
 
 # 读取检测结果：frame_id, x1, y1, x2, y2, score, class_id
-dets = np.loadtxt(detection_file, delimiter=',', dtype=float)
+#dets = np.loadtxt(detection_file, delimiter=',', dtype=float)
+dets = np.loadtxt(detection_file, delimiter=',', dtype=float, skiprows=1)
 
 # 根据检测结果获取帧范围
 all_frames = dets[:, 0].astype(int)
 min_frame = all_frames.min()
 max_frame = all_frames.max()
-
+print(min_frame)
 # 初始化Deep SORT
 # model_path为Deep SORT的外观特征提取模型权重文件
-model_path = "code/model_data/hdpe_grade.pth"
+model_path = "/content/deepsort/code/utils/deep_sort/deep_sort/deep/checkpoint/resnet18-5c106cde.pth"
 deepsort = DeepSort(model_path,
                     max_dist=0.2,
                     max_iou_distance=0.7,
@@ -27,7 +28,7 @@ deepsort = DeepSort(model_path,
 
 # 假设处理后的帧储存在processed_frames目录下，
 # 文件命名例如：frame_000001.jpg, frame_000002.jpg,...
-processed_frame_dir = "processed_frames"
+processed_frame_dir = "/content/detected_frames2"
 
 results = []
 
@@ -50,7 +51,7 @@ for frame_id in range(min_frame, max_frame + 1):
             clss = np.zeros((bboxes_xyxy.shape[0],))
 
     # 加载对应的处理后帧图像，用于Deep SORT提取外观特征
-    img_path = os.path.join(processed_frame_dir, f"frame_{frame_id:06d}.jpg")
+    img_path = os.path.join(processed_frame_dir, f"frame{frame_id:06d}.jpg")
     if os.path.exists(img_path):
         im = cv2.imread(img_path)
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
@@ -69,18 +70,28 @@ for frame_id in range(min_frame, max_frame + 1):
     # 调用deepsort进行更新
     # outputs格式为: [x1,y1,x2,y2,track_id,class_id]
     outputs = deepsort.update(bboxes_xywh, confs, clss, im)
+    #print("Frame:", frame_id)
+    #print("Detections:", frame_dets.shape)
+    #print("Confidences:", confs)
+    #print("Outputs from update:", outputs)
 
     # 将输出结果存储
     for t in outputs:
-        x1, y1, x2, y2, track_id, c_id = t
+      #print(t)
+      if len(t) == 0:
+        # 数据不足，不进行解包
+        continue
+      for row in t:
+        x1, y1, x2, y2, c_id, track_id = row
+        print(x1)
         w = x2 - x1
         h = y2 - y1
         # 保存格式：frame_id, track_id, x1, y1, w, h, class_id
         # 你可以根据自己的需求决定输出格式
-        results.append([frame_id, track_id, x1, y1, w, h, c_id])
-
+        results.append(np.array([frame_id, track_id, x1, y1, w, h, c_id]))
+#print(results)
 # 所有帧处理完毕后，将结果写入文件
-out_file = "path/to/tracking_result.txt"
+out_file = "/content/tracking_result.txt"
 with open(out_file, 'w') as f:
     for r in results:
         f.write("%d,%d,%.2f,%.2f,%.2f,%.2f,%d\n" % tuple(r))
